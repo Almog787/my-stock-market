@@ -2,8 +2,8 @@ name: Update README Report
 
 on:
   schedule:
-    - cron: '0 2 * * *' # רץ ב-2 בלילה בכל יום
-  workflow_dispatch: # הפעלה ידנית מהממשק
+    - cron: '0 2 * * *' # רץ ב-2 בלילה
+  workflow_dispatch: # מאפשר הפעלה ידנית
 
 permissions:
   contents: write
@@ -21,7 +21,8 @@ jobs:
           python-version: '3.9'
 
       - name: Install dependencies
-        run: pip install pandas pytz
+        run: |
+          pip install pandas pytz yfinance  # <--- כאן הוספנו את yfinance
 
       - name: Generate Report
         run: python generate_report.py
