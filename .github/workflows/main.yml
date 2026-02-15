@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  issues: write # נדרש כדי לאפשר לבוט לפתוח Issue
 
 jobs:
   scrape-and-report:
@@ -30,7 +31,22 @@ jobs:
         run: python scraper.py
 
       - name: Commit and Push changes
+        id: auto_commit # הוספת מזהה כדי שנוכל לבדוק אם היה שינוי
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "🤖 Update price data [skip ci]"
           file_pattern: 'README.md data.json'
+
+      - name: Create Issue on Price Change
+        # השלב הזה ירוץ רק אם ה-commit באמת התבצע (כלומר הקבצים השתנו)
+        if: steps.auto_commit.outputs.changes_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '📢 התראת מחיר: נמצא שינוי בנתונים!',
+              body: 'הבוט זיהה שינוי במחיר ועדכן את הקבצים במאגר. \n\n[צפה בשינויים](https://github.com/' + context.repo.owner + '/' + context.repo.repo + '/commits/main)',
+              assignees: [context.repo.owner] // מתייג אותך אוטומטית כדי שתקבל התראה
+            })
