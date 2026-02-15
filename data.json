@@ -16,5 +16,33 @@
         "price": 2199.0,
         "title": "סלון פינתי לידר נפתח למיטה  +ארגז ברוחב 229 ס\"מ",
         "url": "https://www.ace.co.il/5760921"
+    },
+    {
+        "store": "ACE",
+        "timestamp": "2026-02-15 09:23:25",
+        "price": 2199.0,
+        "title": "סלון פינתי לידר נפתח למיטה  +ארגז ברוחב 229 ס\"מ",
+        "url": "https://www.ace.co.il/5760921"
+    },
+    {
+        "store": "Dynamic",
+        "timestamp": "2026-02-15 09:23:28",
+        "price": 1.0,
+        "title": "עמוד לא נמצא",
+        "url": "https://www.gomobile.co.il/s25-ultra"
+    },
+    {
+        "store": "HotMobile",
+        "timestamp": "2026-02-15 09:23:32",
+        "price": 0.0,
+        "title": "לא נמצא שם מוצר",
+        "url": "https://www.hotmobile.co.il/s25"
+    },
+    {
+        "store": "Cellcom",
+        "timestamp": "2026-02-15 09:23:34",
+        "price": 0.0,
+        "title": "לא נמצא שם מוצר",
+        "url": "https://www.cellcom.co.il/s25"
     }
 ]
