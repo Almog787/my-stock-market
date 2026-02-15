@@ -1,0 +1,34 @@
+name: Stock Portfolio Tracker
+
+on:
+  schedule:
+    - cron: '0 * * * 1-5' # רץ כל שעה עגולה בימי חול
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  track-stocks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install requests pandas yfinance pytz # הוספנו yfinance לשליפת מניות
+
+      - name: Run Tracker
+        run: python stock_tracker.py
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "📈 Update Portfolio Value [skip ci]"
