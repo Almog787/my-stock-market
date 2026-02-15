@@ -1,0 +1,36 @@
+name: Price Tracker Bot
+
+on:
+  schedule:
+    # הרצה כל 15 דקות
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # מאפשר הרצה ידנית לבדיקה
+
+permissions:
+  contents: write
+
+jobs:
+  scrape-and-report:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Scraper
+        run: python scraper.py
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🤖 Update price data [skip ci]"
+          file_pattern: 'README.md data.json'
