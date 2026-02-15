@@ -3,7 +3,7 @@ name: Price Tracker Bot
 on:
   schedule:
     # הרצה כל 15 דקות
-    - cron: '*/15 * * * *'
+    - cron: '*/3 * * * *'
   workflow_dispatch: # מאפשר הרצה ידנית לבדיקה
 
 permissions:
