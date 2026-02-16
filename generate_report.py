@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import pytz
 import os
+import shutil
 import logging
 
 # --- Configuration & Constants ---
@@ -14,6 +15,7 @@ README_FILE = "README.md"
 LOG_FILE = "error_log.txt"
 CHART_FILE = "portfolio_performance.png"
 PIE_FILE = "asset_allocation.png"
+ARCHIVE_DIR = "archive/charts" # New archive directory
 TZ = pytz.timezone('Israel')
 ANCHOR_DAY = 10
 
@@ -23,6 +25,22 @@ if not os.path.exists(LOG_FILE):
 
 logging.basicConfig(filename=LOG_FILE, level=logging.ERROR, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
+
+def archive_old_visuals():
+    """Moves existing charts to the archive folder with a timestamp."""
+    if not os.path.exists(ARCHIVE_DIR):
+        os.makedirs(ARCHIVE_DIR, exist_ok=True)
+    
+    timestamp = datetime.now(TZ).strftime("%Y%m%d_%H%M")
+    
+    for filename in [CHART_FILE, PIE_FILE]:
+        if os.path.exists(filename):
+            name, ext = os.path.splitext(filename)
+            new_name = f"{timestamp}_{name}{ext}"
+            try:
+                shutil.move(filename, os.path.join(ARCHIVE_DIR, new_name))
+            except Exception as e:
+                logging.error(f"Failed to archive {filename}: {e}")
 
 def get_live_usd_ils():
     """Fetches the current USD/ILS exchange rate."""
@@ -38,19 +56,15 @@ def calculate_portfolio_value(row, holdings, tickers):
     """Calculates total portfolio value in USD for a given row of prices."""
     return sum(row[t] * holdings[t] for t in tickers if t in row)
 
-def generate_visuals(df, holdings, usd_rate):
+def generate_visuals(df, holdings):
     """Generates performance and allocation charts using matplotlib."""
-    plt.switch_backend('Agg') # Non-GUI backend for GitHub Actions
+    plt.switch_backend('Agg') # Non-GUI backend for CI/CD
     
-    # 1. Performance Chart (Portfolio vs S&P 500)
+    # 1. Performance Chart
     plt.figure(figsize=(10, 5))
-    
-    # Normalize values to 100 for comparison
     portfolio_norm = (df['total_usd'] / df['total_usd'].iloc[0]) * 100
-    
     plt.plot(df['ts'], portfolio_norm, label='My Portfolio', color='#1f77b4', linewidth=2)
     
-    # Fetch Benchmark (S&P 500)
     try:
         spy = yf.Ticker("^GSPC").history(start=df['ts'].min(), end=df['ts'].max() + timedelta(days=1))
         if not spy.empty:
@@ -78,14 +92,15 @@ def generate_visuals(df, holdings, usd_rate):
 
 def main():
     if not os.path.exists(HISTORY_FILE) or not os.path.exists(PORTFOLIO_FILE):
-        logging.error("Required files missing.")
         return
+
+    # Archive old charts before generating new ones
+    archive_old_visuals()
 
     try:
         with open(PORTFOLIO_FILE, 'r') as f: holdings = json.load(f)
         with open(HISTORY_FILE, 'r') as f: history = json.load(f)
-    except Exception as e:
-        logging.error(f"JSON Read Error: {e}")
+    except:
         return
 
     if not history: return
@@ -93,56 +108,36 @@ def main():
     usd_to_ils = get_live_usd_ils()
     tickers = list(holdings.keys())
     
-    # DataFrame Processing
     df = pd.DataFrame([{"ts": e['timestamp'], **e['prices']} for e in history])
     df['ts'] = pd.to_datetime(df['ts']).dt.tz_localize(None)
     df = df.sort_values('ts')
-    
-    # Core Calculations
     df['total_usd'] = df.apply(lambda r: calculate_portfolio_value(r, holdings, tickers), axis=1)
     
     current_val_usd = df['total_usd'].iloc[-1]
     initial_val_usd = df['total_usd'].iloc[0]
     total_ret = ((current_val_usd / initial_val_usd) - 1) * 100
     
-    # Risk Metric: Max Drawdown
-    rolling_max = df['total_usd'].cummax()
-    drawdown = (df['total_usd'] / rolling_max) - 1
-    max_drawdown = drawdown.min() * 100
+    generate_visuals(df, holdings)
 
-    # Best/Worst Performers (Last 30 days or available)
-    start_prices = df.iloc[0]
-    last_prices = df.iloc[-1]
-    perf_map = {t: ((last_prices[t]/start_prices[t])-1)*100 for t in tickers if t in start_prices and t in last_prices}
-    best_stock = max(perf_map, key=perf_map.get)
-    worst_stock = min(perf_map, key=perf_map.get)
-
-    # Generate Images
-    generate_visuals(df, holdings, usd_to_ils)
-
-    # --- Build README ---
+    # Building README
     output = [
         f"# 📊 Portfolio Dashboard",
         f"**עודכן ב:** {datetime.now(TZ).strftime('%d/%m/%Y %H:%M')} | **שער דולר:** ₪{usd_to_ils:.3f}\n",
-        f"## 💰 סיכום ביצועים כולל",
-        f"- **שווי תיק:** `₪{current_val_usd * usd_to_ils:,.0f}`",
-        f"- **תשואה מצטברת:** `{total_ret:+.2f}%`",
-        f"- **מקס' ירידה מהשיא (Drawdown):** `{max_drawdown:.2f}%`",
-        f"- **מניית החודש 🚀:** {best_stock} ({perf_map[best_stock]:+.1f}%)",
-        f"- **המאכזבת 📉:** {worst_stock} ({perf_map[worst_stock]:+.1f}%)\n",
-        f"## 📈 גרף ביצועים",
+        f"## 📈 גרף ביצועים נוכחי",
         f"![Performance](./{CHART_FILE})\n",
         f"## 🥧 התפלגות נכסים",
         f"![Allocation](./{PIE_FILE})\n",
+        f"## 📑 ארכיון דוחות",
+        f"ניתן למצוא את כל הגרפים ההיסטוריים בתיקיית `archive/charts/`.\n",
         f"## 📊 פירוט אחזקות",
-        f"| מניה | כמות | שווי (₪) | משקל בתיק |",
+        f"| מניה | כמות | שווי (₪) | משקל |",
         f"| :--- | :--- | :--- | :--- |"
     ]
 
     for t in tickers:
-        if t in last_prices:
-            val_ils = last_prices[t] * holdings[t] * usd_to_ils
-            weight = (last_prices[t] * holdings[t] / current_val_usd) * 100
+        if t in df.columns:
+            val_ils = df.iloc[-1][t] * holdings[t] * usd_to_ils
+            weight = (df.iloc[-1][t] * holdings[t] / current_val_usd) * 100
             output.append(f"| {t} | {holdings[t]} | ₪{val_ils:,.0f} | {weight:.1f}% |")
 
     with open(README_FILE, 'w', encoding='utf-8') as f:
