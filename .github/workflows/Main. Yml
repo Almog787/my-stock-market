@@ -1,0 +1,37 @@
+name: Finance System Tracker
+
+on:
+  schedule:
+    - cron: '0 14-22 * * 1-5' # רץ בכל שעה בשעות המסחר (שעון UTC)
+  workflow_dispatch: # מאפשר הרצה ידנית
+
+permissions:
+  contents: write # נדרש רק כדי לעדכן את הקבצים במאגר
+
+jobs:
+  process-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install pandas yfinance pytz matplotlib
+
+      - name: Run Tracker & Analytics
+        run: |
+          python stock_tracker.py
+          python generate_report.py
+
+      - name: Commit Updated Data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Data Update: Prices & Charts [skip ci]"
+          file_pattern: 'data_hub/ README.md'
