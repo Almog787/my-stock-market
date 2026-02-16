@@ -6,122 +6,74 @@ import pytz
 import pandas as pd
 import logging
 
-# --- Configuration and Constants ---
-PORTFOLIO_FILE = "portfolio.json"
-HISTORY_FILE = "stock_history.json"
-LOG_FILE = "error_log.txt"
+# --- Configuration & Paths ---
+BASE_DATA_DIR = "data_hub"
+PORTFOLIO_FILE = os.path.join(BASE_DATA_DIR, "portfolio.json")
+HISTORY_FILE = os.path.join(BASE_DATA_DIR, "stock_history.json")
+LOG_FILE = os.path.join(BASE_DATA_DIR, "error_log.txt")
 TZ = pytz.timezone('Israel')
-MAX_HISTORY_ROWS = 10000 # Increased limit for long-term accumulation
+MAX_HISTORY_ROWS = 10000
 
-# Setup logging
-logging.basicConfig(
-    filename=LOG_FILE, 
-    level=logging.ERROR, 
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+# Ensure directory exists
+os.makedirs(BASE_DATA_DIR, exist_ok=True)
 
-def ensure_files_exist():
-    """Ensures critical files exist before processing to prevent CI/CD crashes."""
+logging.basicConfig(filename=LOG_FILE, level=logging.ERROR, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+def ensure_base_files():
+    """Initializes JSON files if missing."""
     if not os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-            json.dump([], f)
-            print(f"Created new {HISTORY_FILE}")
-    
+        with open(HISTORY_FILE, 'w', encoding='utf-8') as f: json.dump([], f)
     if not os.path.exists(PORTFOLIO_FILE):
-        with open(PORTFOLIO_FILE, 'w', encoding='utf-8') as f:
-            # Default fallback if portfolio is missing
-            json.dump({"SPY": 1}, f)
-            print(f"Created default {PORTFOLIO_FILE}")
-
-def load_json_safe(file_path):
-    """Loads JSON file with a fallback for corrupted files."""
-    try:
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-    except (json.JSONDecodeError, Exception) as e:
-        logging.error(f"Failed to load {file_path}: {e}")
-    return []
+        with open(PORTFOLIO_FILE, 'w', encoding='utf-8') as f: json.dump({"SPY": 1}, f)
 
 def main():
-    ensure_files_exist()
+    ensure_base_files()
     
-    # Load portfolio holdings
-    holdings_data = load_json_safe(PORTFOLIO_FILE)
-    if isinstance(holdings_data, list): # Basic safety if format varies
-        holdings = holdings_data[0] if holdings_data else {"SPY": 1}
-    else:
-        holdings = holdings_data
+    # Load portfolio
+    try:
+        with open(PORTFOLIO_FILE, 'r') as f: holdings = json.load(f)
+    except: holdings = {"SPY": 1}
 
     tickers = list(holdings.keys())
-    # Ensure SPY is always present for benchmark comparisons
-    if "SPY" not in tickers:
-        tickers.append("SPY")
+    if "SPY" not in tickers: tickers.append("SPY")
 
-    # Load existing history
-    history = load_json_safe(HISTORY_FILE)
-
-    # 1. Initial Backfill (If history is empty)
-    if not history:
-        print("Empty history detected. Starting 1-year backfill...")
-        try:
-            # Downloading 1 year of daily data
-            data = yf.download(tickers, period="1y", interval="1d", progress=False)
-            if not data.empty:
-                close_prices = data['Close'].ffill().bfill()
-                for date, row in close_prices.iterrows():
-                    # Clean data: remove NaNs
-                    prices = {t: round(float(v), 2) for t, v in row.to_dict().items() if pd.notna(v)}
-                    if prices:
-                        history.append({
-                            "timestamp": date.strftime("%Y-%m-%d %H:%M:%S"),
-                            "prices": prices
-                        })
-                print(f"Backfill complete. Added {len(history)} records.")
-        except Exception as e:
-            logging.error(f"Backfill failed: {e}")
-
-    # 2. Current Sampling (Fetch latest prices)
+    # Load history
     try:
-        # Fetching latest 1-day data to get the most recent minute/close
-        current_batch = yf.download(tickers, period="1d", interval="1m", progress=False)
-        if not current_batch.empty:
-            last_row = current_batch['Close'].iloc[-1]
-            new_timestamp = datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Prepare and validate prices
-            current_prices = {t: round(float(v), 2) for t, v in last_row.to_dict().items() if pd.notna(v)}
-            
-            # Deduplication: Check if we already sampled this minute
-            is_duplicate = False
-            if history:
-                last_entry_ts = history[-1]['timestamp']
-                # Check if same date and hour/minute
-                if last_entry_ts[:16] == new_timestamp[:16]:
-                    is_duplicate = True
-            
-            if not is_duplicate and current_prices:
+        with open(HISTORY_FILE, 'r', encoding='utf-8') as f: history = json.load(f)
+    except: history = []
+
+    # 1. Backfill if empty
+    if not history:
+        print("Backfilling initial data...")
+        data = yf.download(tickers, period="1y", interval="1d", progress=False)['Close']
+        if not data.empty:
+            data = data.ffill().bfill()
+            for date, row in data.iterrows():
                 history.append({
-                    "timestamp": new_timestamp,
-                    "prices": current_prices
+                    "timestamp": date.strftime("%Y-%m-%d %H:%M:%S"),
+                    "prices": {t: round(float(v), 2) for t, v in row.to_dict().items() if pd.notna(v)}
                 })
-                print(f"Added current sample at {new_timestamp}")
+
+    # 2. Current sampling
+    try:
+        current = yf.download(tickers, period="1d", interval="1m", progress=False)['Close']
+        if not current.empty:
+            last_row = current.iloc[-1]
+            ts = datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S")
+            # Deduplicate by minute
+            if not history or history[-1]['timestamp'][:16] != ts[:16]:
+                history.append({
+                    "timestamp": ts,
+                    "prices": {t: round(float(v), 2) for t, v in last_row.to_dict().items() if pd.notna(v)}
+                })
     except Exception as e:
         logging.error(f"Sampling error: {e}")
-        print(f"Error sampling current prices: {e}")
 
-    # 3. Save and Persist
-    # We keep a large buffer (MAX_HISTORY_ROWS) to ensure long-term data accumulation
-    # while preventing the file from growing to an unmanageable size for Git.
-    history = sorted(history, key=lambda x: x['timestamp']) # Ensure chronological order
-    final_history = history[-MAX_HISTORY_ROWS:]
-    
-    try:
-        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-            json.dump(final_history, f, indent=4)
-        print(f"Successfully saved {len(final_history)} records to {HISTORY_FILE}")
-    except Exception as e:
-        logging.error(f"Save failed: {e}")
+    # 3. Save
+    history = sorted(history, key=lambda x: x['timestamp'])[-MAX_HISTORY_ROWS:]
+    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(history, f, indent=4)
 
 if __name__ == "__main__":
     main()
