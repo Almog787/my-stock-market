@@ -2,6 +2,7 @@ name: Stock System: Track & Report
 
 on:
   schedule:
+    # שים לב שזה זמן UTC!
     - cron: '0 14-22 * * 1-5'
   workflow_dispatch:
 
@@ -16,16 +17,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # גרסה 5 יציבה יותר
         with:
           python-version: '3.9'
-          cache: 'pip'
 
       - name: Install Dependencies
-        run: pip install pandas pytz yfinance
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas pytz yfinance
 
       - name: 1. Collect Data
         run: python stock_tracker.py
+        continue-on-error: true # מונע קריסה אם ה-API נפל
 
       - name: 2. Generate Report
         run: python generate_report.py
@@ -34,4 +37,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "📊 Portfolio Update [skip ci]"
+          # הוספת ה-flag למקרה שחלק מהקבצים לא נוצרו
           file_pattern: 'stock_history.json README.md error_log.txt'
+          disable_globbing: false
