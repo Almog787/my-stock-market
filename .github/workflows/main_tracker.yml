@@ -21,7 +21,7 @@ jobs:
           python-version: '3.9'
 
       - name: Install Deps
-        run: pip install pandas pytz yfinance
+        run: pip install pandas pytz yfinance matplotlib
 
       - name: Run Tracker
         run: python stock_tracker.py
@@ -32,5 +32,5 @@ jobs:
       - name: Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update Portfolio Data [skip ci]"
-          file_pattern: 'stock_history.json README.md error_log.txt'
+          commit_message: "Analytics Update [skip ci]"
+          file_pattern: 'stock_history.json README.md error_log.txt *.png'
