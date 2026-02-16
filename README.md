@@ -1,14 +1,16 @@
-# 📈 דוח תיק מניות
-**עודכן:** 16/02/2026 08:49
+# 📈 Stock Portfolio Dashboard
+**Last Sync:** 16/02/2026 08:57 (Israel Time)
 
-## 📊 ביצועים
+## 🚀 Performance Summary
+- **Current Value:** `₪176,308`
+- **Total Return:** `+35.70%`
+- **USD/ILS Rate:** `₪3.086`
+
+## 📊 Growth Chart
 ![Growth](./data_hub/performance.png)
-## 🥧 פילוח
+
+## 🥧 Asset Allocation
 ![Allocation](./data_hub/allocation.png)
 
-## 💰 סיכום
-- **שווי כולל:** `₪2,103`
-- **רווח כולל:** `+0.00%`
-
 ---
-*כל המידע הגולמי והארכיון נמצאים בתיקיית `data_hub`*
+*All data and archives are stored in the `data_hub` folder.*
