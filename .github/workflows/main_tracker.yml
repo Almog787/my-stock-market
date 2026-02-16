@@ -1,4 +1,4 @@
-name: Stock System: Track & Report
+name: Stock System
 
 on:
   schedule:
@@ -9,31 +9,28 @@ permissions:
   contents: write
 
 jobs:
-  update_portfolio:
+  process:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pandas pytz yfinance
+      - name: Install Deps
+        run: pip install pandas pytz yfinance
 
-      - name: 1. Collect Data
+      - name: Run Tracker
         run: python stock_tracker.py
-        continue-on-error: true
 
-      - name: 2. Generate Report
+      - name: Run Report
         run: python generate_report.py
 
-      - name: Commit & Push Updates
+      - name: Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "📊 Portfolio Update [skip ci]"
+          commit_message: "Update Portfolio Data [skip ci]"
           file_pattern: 'stock_history.json README.md error_log.txt'
