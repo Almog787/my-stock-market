@@ -111,7 +111,10 @@ def main():
     
     current_val_usd = df['total_usd'].iloc[-1]
     initial_val_usd = df['total_usd'].iloc[0]
-    total_ret = ((current_val_usd / initial_val_usd) - 1) * 100
+    
+    # Cumulative Return
+    total_ret_pct = ((current_val_usd / initial_val_usd) - 1) * 100
+    total_ret_ils = (current_val_usd - initial_val_usd) * usd_to_ils
 
     # Change Calculations
     one_day_ago = df['ts'].max() - timedelta(days=1)
@@ -132,7 +135,6 @@ def main():
             if len(valid_prices) >= 2:
                 perf_map[t] = ((valid_prices.iloc[-1] / valid_prices.iloc[0]) - 1) * 100
     best_stock = max(perf_map, key=perf_map.get) if perf_map else "N/A"
-    worst_stock = min(perf_map, key=perf_map.get) if perf_map else "N/A"
 
     generate_visuals(df, holdings)
 
@@ -150,8 +152,8 @@ def main():
         f"| Metric | Value | נתון |",
         f"| :--- | :--- | :--- |",
         f"| **Portfolio Value** | `₪{current_val_usd * usd_to_ils:,.0f}` | **שווי תיק** |",
-        f"| **Daily Change** | `{daily_change_pct:+.2f}%` | **שינוי יומי** |",
-        f"| **Total Return** | `{total_ret:+.2f}%` | **תשואה מצטברת** |",
+        f"| **Daily Change** | `{daily_change_pct:+.2f}%` (₪{daily_change_ils:,.0f}) | **שינוי יומי** |",
+        f"| **Total Return** | `{total_ret_pct:+.2f}%` (₪{total_ret_ils:,.0f}) | **תשואה מצטברת** |",
         f"| **Max Drawdown** | `{max_drawdown:.2f}%` | **ירידה מקסימלית** |",
         f"| **Best Stock 🚀** | {best_stock} | **המניה המנצחת** |",
         
@@ -166,7 +168,7 @@ def main():
         f"1. פתחו את הקובץ `data_hub/portfolio.json`.\n2. לחצו על אייקון ה**עריכה**.\n3. עדכנו מניות/כמויות ולחצו על **Commit changes**.\n",
         
         f"---",
-        f"📂 *Created by [YourName](https://github.com/YourUsername)* | [Live Site](https://almog787.github.io/Sapa/)"
+        f"📂 *Created by [Almog787](https://github.com/Almog787)* | [Live Site](https://almog787.github.io/Sapa/)"
     ]
 
     with open(README_FILE, 'w', encoding='utf-8') as f:
