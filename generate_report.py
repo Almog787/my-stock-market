@@ -104,7 +104,7 @@ def main():
     tickers = list(holdings.keys())
     
     # Process History Data
-    df = pd.DataFrame(, **e} for e in history])
+    df = pd.DataFrame([{"ts": e, **e} for e in history])
     df = pd.to_datetime(df).dt.tz_localize(None)
     df = df.sort_values('ts')
     
