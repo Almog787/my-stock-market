@@ -19,16 +19,17 @@ PIE_FILE = os.path.join(DATA_DIR, "asset_allocation.png")
 README_FILE = "README.md"
 TZ = pytz.timezone('Israel')
 
+# --- Portfolio Configuration ---
+PURCHASE_DATE = datetime(2024, 12, 20)
+
 # Ensure directories exist
 os.makedirs(ARCHIVE_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# Logging setup
 logging.basicConfig(filename=LOG_FILE, level=logging.ERROR, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 def archive_visuals():
-    """Archive old visuals before creating new ones."""
     ts = datetime.now(TZ).strftime("%Y%m%d_%H%M")
     for f in [CHART_FILE, PIE_FILE]:
         if os.path.exists(f):
@@ -36,7 +37,6 @@ def archive_visuals():
             shutil.move(f, os.path.join(ARCHIVE_DIR, f"{ts}_{name}"))
 
 def get_live_usd_ils():
-    """Fetch live USD/ILS exchange rate with fail-safe."""
     try:
         ticker = yf.Ticker("ILS=X")
         data = ticker.history(period="1d")
@@ -46,7 +46,6 @@ def get_live_usd_ils():
         return 3.65
 
 def generate_visuals(df, holdings):
-    """Generate performance and allocation charts."""
     plt.switch_backend('Agg')
     
     # 1. Performance Graph
@@ -63,7 +62,7 @@ def generate_visuals(df, holdings):
     except Exception as e:
         logging.error(f"Benchmark error: {e}")
 
-    plt.title('Performance vs Benchmark (Normalized to 100)', fontsize=14)
+    plt.title(f'Performance Since Purchase ({PURCHASE_DATE.strftime("%d/%m/%y")})', fontsize=14)
     plt.grid(True, alpha=0.2)
     plt.legend()
     plt.savefig(CHART_FILE)
@@ -100,8 +99,16 @@ def main():
     usd_to_ils = get_live_usd_ils()
     tickers = list(holdings.keys())
     
-    df = pd.DataFrame([{"ts": e['timestamp'], **e['prices']} for e in history])
-    df['ts'] = pd.to_datetime(df['ts']).dt.tz_localize(None)
+    df_raw = pd.DataFrame([{"ts": e['timestamp'], **e['prices']} for e in history])
+    df_raw['ts'] = pd.to_datetime(df_raw['ts']).dt.tz_localize(None)
+    
+    # Filtering logic - preserved and integrated
+    df = df_raw[df_raw['ts'] >= PURCHASE_DATE].copy()
+    
+    if df.empty:
+        logging.error("No data found after the specified purchase date.")
+        return
+
     df = df.sort_values('ts')
     
     price_cols = [t for t in tickers if t in df.columns]
@@ -112,22 +119,18 @@ def main():
     current_val_usd = df['total_usd'].iloc[-1]
     initial_val_usd = df['total_usd'].iloc[0]
     
-    # Cumulative Return
     total_ret_pct = ((current_val_usd / initial_val_usd) - 1) * 100
     total_ret_ils = (current_val_usd - initial_val_usd) * usd_to_ils
 
-    # Change Calculations
     one_day_ago = df['ts'].max() - timedelta(days=1)
     past_day_df = df[df['ts'] <= one_day_ago]
     prev_val_usd = past_day_df['total_usd'].iloc[-1] if not past_day_df.empty else df['total_usd'].iloc[0]
     daily_change_pct = ((current_val_usd / prev_val_usd) - 1) * 100
     daily_change_ils = (current_val_usd - prev_val_usd) * usd_to_ils
 
-    # Risk Metrics
     rolling_max = df['total_usd'].cummax()
     max_drawdown = ((df['total_usd'] / rolling_max) - 1).min() * 100
 
-    # Performance Mapping
     perf_map = {}
     for t in tickers:
         if t in df.columns:
@@ -138,17 +141,14 @@ def main():
 
     generate_visuals(df, holdings)
 
-    # --- Build README ---
     update_time = datetime.now(TZ).strftime('%d/%m/%Y %H:%M')
     
     output = [
         f"![Python](https://img.shields.io/badge/python-3.8%2B-blue?logo=python)",
         f"![License](https://img.shields.io/badge/license-MIT-green)",
-        f"![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-orange)\n",
         f"# 📊 Portfolio Dashboard | מעקב תיק השקעות",
         f"**Last Update / עדכון אחרון:** {update_time} | **USD/ILS:** ₪{usd_to_ils:.3f}\n",
-        
-        f"## 💰 Performance Summary | סיכום ביצועים",
+        f"## 💰 Performance Summary | סיכום ביצועים (מאז {PURCHASE_DATE.strftime('%d/%m/%Y')})",
         f"| Metric | Value | נתון |",
         f"| :--- | :--- | :--- |",
         f"| **Portfolio Value** | `₪{current_val_usd * usd_to_ils:,.0f}` | **שווי תיק** |",
@@ -156,17 +156,12 @@ def main():
         f"| **Total Return** | `{total_ret_pct:+.2f}%` (₪{total_ret_ils:,.0f}) | **תשואה מצטברת** |",
         f"| **Max Drawdown** | `{max_drawdown:.2f}%` | **ירידה מקסימלית** |",
         f"| **Best Stock 🚀** | {best_stock} | **המניה המנצחת** |",
-        
         f"\n## 📈 Charts | גרפים",
         f"![Performance](./{CHART_FILE})",
         f"![Allocation](./{PIE_FILE})\n",
-        
-        f"## ⚙️ How to Update? | הוראות עדכון",
-        f"### 🇺🇸 English",
-        f"1. Open `data_hub/portfolio.json`.\n2. Click the **Edit** icon.\n3. Modify symbols/amounts and **Commit changes**.\n",
-        f"### 🇮🇱 עברית",
-        f"1. פתחו את הקובץ `data_hub/portfolio.json`.\n2. לחצו על אייקון ה**עריכה**.\n3. עדכנו מניות/כמויות ולחצו על **Commit changes**.\n",
-        
+        f"## ⚙️ Settings | הגדרות תיק",
+        f"- **Purchase Date:** {PURCHASE_DATE.strftime('%d/%m/%Y')}",
+        f"- **Data Hub Path:** `{DATA_DIR}`",
         f"---",
         f"📂 *Created by [Almog787](https://github.com/Almog787)* | [Live Site](https://almog787.github.io/Sapa/)"
     ]
