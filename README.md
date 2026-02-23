@@ -3,14 +3,14 @@
 ![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-orange)
 
 # 📊 Portfolio Dashboard | מעקב תיק השקעות
-**Last Update / עדכון אחרון:** 23/02/2026 23:53 | **USD/ILS:** ₪3.121
+**Last Update / עדכון אחרון:** 24/02/2026 00:50 | **USD/ILS:** ₪3.123
 
 ## 💰 Performance Summary | סיכום ביצועים
 | Metric | Value | נתון |
 | :--- | :--- | :--- |
-| **Portfolio Value** | `₪180,890` | **שווי תיק** |
+| **Portfolio Value** | `₪180,983` | **שווי תיק** |
 | **Daily Change** | `-0.67%` (₪-1,214) | **שינוי יומי** |
-| **Total Return** | `+37.65%` (₪49,475) | **תשואה מצטברת** |
+| **Total Return** | `+37.65%` (₪49,500) | **תשואה מצטברת** |
 | **Max Drawdown** | `-24.97%` | **ירידה מקסימלית** |
 | **Best Stock 🚀** | ASML | **המניה המנצחת** |
 
