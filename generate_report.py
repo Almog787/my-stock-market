@@ -9,7 +9,6 @@ import logging
 
 # --- Paths Configuration ---
 DATA_DIR = "data_hub"
-# הסרנו את ARCHIVE_DIR כדי למנוע ניפוח של המאגר
 HISTORY_FILE = os.path.join(DATA_DIR, "stock_history.json")
 PORTFOLIO_FILE = os.path.join(DATA_DIR, "portfolio.json")
 LOG_FILE = os.path.join(DATA_DIR, "error_log.txt")
@@ -36,48 +35,72 @@ def get_live_usd_ils():
         return 3.65
 
 def generate_visuals(df, holdings):
-    """Generate performance and allocation charts. Overwrites existing files."""
+    """Generate high-resolution performance and allocation charts."""
+    # הגדרות איכות גבוהה (DPI 300)
     plt.switch_backend('Agg')
+    plt.rcParams['figure.dpi'] = 300
+    plt.rcParams['savefig.dpi'] = 300
     
-    # 1. Performance Graph
+    # 1. Performance Graph (High Res)
     plt.figure(figsize=(12, 6))
     portfolio_norm = (df['total_usd'] / df['total_usd'].iloc[0]) * 100
-    plt.plot(df['ts'], portfolio_norm, label='My Portfolio', color='#1f77b4', linewidth=2.5)
+    
+    # קו תיק עבה וברור יותר
+    plt.plot(df['ts'], portfolio_norm, label='My Portfolio', color='#007AFF', linewidth=3)
     
     try:
         spy = yf.Ticker("^GSPC").history(start=df['ts'].min(), end=df['ts'].max() + timedelta(days=1))
         if not spy.empty:
             spy.index = spy.index.tz_localize(None) 
             spy_norm = (spy['Close'] / spy['Close'].iloc[0]) * 100
-            plt.plot(spy.index, spy_norm, label='S&P 500 (Benchmark)', color='#ff7f0e', linestyle='--', alpha=0.7)
+            plt.plot(spy.index, spy_norm, label='S&P 500 (Benchmark)', color='#FF9500', linestyle='--', alpha=0.8, linewidth=2)
     except Exception as e:
         logging.error(f"Benchmark error: {e}")
 
-    plt.title('Performance vs Benchmark (Normalized to 100)', fontsize=14)
-    plt.grid(True, alpha=0.2)
-    plt.legend()
-    plt.savefig(CHART_FILE)
+    plt.title('Performance vs Benchmark (Normalized to 100)', fontsize=14, fontweight='bold')
+    plt.grid(True, linestyle=':', alpha=0.6)
+    plt.legend(frameon=True, shadow=True)
+    plt.xlabel('Date')
+    plt.ylabel('Relative Change (%)')
+    
+    # שמירה ברזולוציה גבוהה עם חיתוך שוליים אוטומטי
+    plt.savefig(CHART_FILE, dpi=300, bbox_inches='tight')
     plt.close()
 
-    # 2. Asset Allocation
-    plt.figure(figsize=(8, 8))
+    # 2. Asset Allocation (Modern Donut Style)
+    plt.figure(figsize=(10, 10))
     last_row = df.iloc[-1]
     tickers = list(holdings.keys())
     values = [last_row[t] * holdings[t] for t in tickers if t in last_row and pd.notnull(last_row[t])]
     labels = [t for t in tickers if t in last_row and pd.notnull(last_row[t])]
     
     if values:
-        plt.pie(values, labels=labels, autopct='%1.1f%%', startangle=140, colors=plt.cm.Pastel1.colors)
-        plt.title('Asset Allocation (USD Weight)')
-        plt.savefig(PIE_FILE)
+        # פלטת צבעים מודרנית
+        colors = ['#FF595E', '#FFCA3A', '#8AC926', '#1982C4', '#6A4C93', '#4267B2']
+        
+        wedges, texts, autotexts = plt.pie(
+            values, labels=labels, autopct='%1.1f%%', 
+            startangle=140, colors=colors[:len(values)],
+            pctdistance=0.85, explode=[0.02]*len(values)
+        )
+        
+        # עיצוב טקסט בתוך הגרף
+        plt.setp(autotexts, size=10, weight="bold", color="white")
+        plt.setp(texts, size=12)
+        
+        # יצירת מראה ה"דונאט"
+        centre_circle = plt.Circle((0,0), 0.70, fc='white')
+        fig = plt.gcf()
+        fig.gca().add_artist(centre_circle)
+        
+        plt.title('Asset Allocation (USD Weight)', fontsize=16, fontweight='bold')
+        plt.savefig(PIE_FILE, dpi=300, bbox_inches='tight')
     plt.close()
 
 def main():
     if not os.path.exists(HISTORY_FILE) or not os.path.exists(PORTFOLIO_FILE):
         print("Missing required data files.")
         return
-
-    # פונקציית הארכיון הוסרה מכאן כדי למנוע שמירת עותקים ישנים
 
     try:
         with open(PORTFOLIO_FILE, 'r') as f: holdings = json.load(f)
@@ -127,7 +150,7 @@ def main():
                 perf_map[t] = ((valid_prices.iloc[-1] / valid_prices.iloc[0]) - 1) * 100
     best_stock = max(perf_map, key=perf_map.get) if perf_map else "N/A"
 
-    # יצירת הגרפים מחדש (דורס את הקבצים הקודמים ב-data_hub)
+    # יצירת הגרפים המשופרים
     generate_visuals(df, holdings)
 
     # --- Build README ---
