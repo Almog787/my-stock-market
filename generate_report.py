@@ -1,5 +1,3 @@
-
-
 import json
 import pandas as pd
 import yfinance as yf
@@ -7,12 +5,11 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import pytz
 import os
-import shutil
 import logging
 
 # --- Paths Configuration ---
 DATA_DIR = "data_hub"
-ARCHIVE_DIR = os.path.join(DATA_DIR, "archive")
+# הסרנו את ARCHIVE_DIR כדי למנוע ניפוח של המאגר
 HISTORY_FILE = os.path.join(DATA_DIR, "stock_history.json")
 PORTFOLIO_FILE = os.path.join(DATA_DIR, "portfolio.json")
 LOG_FILE = os.path.join(DATA_DIR, "error_log.txt")
@@ -22,20 +19,11 @@ README_FILE = "README.md"
 TZ = pytz.timezone('Israel')
 
 # Ensure directories exist
-os.makedirs(ARCHIVE_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # Logging setup
 logging.basicConfig(filename=LOG_FILE, level=logging.ERROR, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
-
-def archive_visuals():
-    """Archive old visuals before creating new ones."""
-    ts = datetime.now(TZ).strftime("%Y%m%d_%H%M")
-    for f in [CHART_FILE, PIE_FILE]:
-        if os.path.exists(f):
-            name = os.path.basename(f)
-            shutil.move(f, os.path.join(ARCHIVE_DIR, f"{ts}_{name}"))
 
 def get_live_usd_ils():
     """Fetch live USD/ILS exchange rate with fail-safe."""
@@ -48,7 +36,7 @@ def get_live_usd_ils():
         return 3.65
 
 def generate_visuals(df, holdings):
-    """Generate performance and allocation charts."""
+    """Generate performance and allocation charts. Overwrites existing files."""
     plt.switch_backend('Agg')
     
     # 1. Performance Graph
@@ -86,9 +74,10 @@ def generate_visuals(df, holdings):
 
 def main():
     if not os.path.exists(HISTORY_FILE) or not os.path.exists(PORTFOLIO_FILE):
+        print("Missing required data files.")
         return
 
-    archive_visuals()
+    # פונקציית הארכיון הוסרה מכאן כדי למנוע שמירת עותקים ישנים
 
     try:
         with open(PORTFOLIO_FILE, 'r') as f: holdings = json.load(f)
@@ -138,6 +127,7 @@ def main():
                 perf_map[t] = ((valid_prices.iloc[-1] / valid_prices.iloc[0]) - 1) * 100
     best_stock = max(perf_map, key=perf_map.get) if perf_map else "N/A"
 
+    # יצירת הגרפים מחדש (דורס את הקבצים הקודמים ב-data_hub)
     generate_visuals(df, holdings)
 
     # --- Build README ---
