@@ -7,3 +7,6 @@
 2026-02-24 14:24:53,500: 
 1 Failed download:
 2026-02-24 14:24:53,500: ['XOM']: OperationalError('database is locked')
+2026-02-24 16:06:40,431: 
+1 Failed download:
+2026-02-24 16:06:40,431: ['ASML']: OperationalError('database is locked')
