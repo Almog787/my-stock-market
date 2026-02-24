@@ -6,7 +6,7 @@ on:
   workflow_dispatch: # מאפשר הרצה ידנית
 
 permissions:
-  contents: write # נדרש רק כדי לעדכן את הקבצים במאגר
+  contents: write # נדרש כדי לעדכן את הקבצים במאגר
 
 jobs:
   process-data:
@@ -25,13 +25,18 @@ jobs:
       - name: Install Dependencies
         run: pip install pandas yfinance pytz matplotlib
 
-      - name: Run Tracker & Analytics
+      - name: Run Analytics & History Logging
         run: |
+          # הרצת הסקריפט המרכזי שמעדכן מחירים וגרפים
           python stock_tracker.py
+          # הרצת סקריפט הדוחות (במידה והוא נפרד אצלך)
           python generate_report.py
+          # הרצת התוסף החדש לשמירת היסטוריית ה-CSV
+          python history_logger.py
 
       - name: Commit Updated Data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Data Update: Prices & Charts [skip ci]"
-          file_pattern: 'data_hub/ README.md'
+          commit_message: "System Run: Analytics & Archive Update [skip ci]"
+          # הוספנו את התיקייה data_hub/** כדי לוודא שגם תתי-תיקיות נסרקות
+          file_pattern: 'data_hub/** README.md'
