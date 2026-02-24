@@ -1,3 +1,6 @@
 2026-02-16 06:49:29,912 - ERROR - 
 1 Failed download:
 2026-02-16 06:49:29,912 - ERROR - ['SPY']: YFRateLimitError('Too Many Requests. Rate limited. Try after a while.')
+2026-02-24 14:15:47,996: 
+1 Failed download:
+2026-02-24 14:15:47,996: ['ASML']: OperationalError('database is locked')
