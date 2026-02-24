@@ -9,41 +9,57 @@ import pytz
 DATA_DIR = "data_hub"
 HISTORY_DIR = os.path.join(DATA_DIR, "price_history_archive")
 PORTFOLIO_FILE = os.path.join(DATA_DIR, "portfolio.json")
-CSV_HISTORY_FILE = os.path.join(HISTORY_DIR, "full_stocks_history.csv")
+CSV_HISTORY_FILE = os.path.join(HISTORY_DIR, "full_stocks_extended_history.csv")
 TZ = pytz.timezone('Israel')
 
-# יצירת תיקייה ייעודית אם לא קיימת
 os.makedirs(HISTORY_DIR, exist_ok=True)
 
-def fetch_full_history(tickers):
-    """מושך את כל היסטוריית המחירים עבור רשימת מניות"""
-    print(f"Fetching full history for: {tickers}...")
+def get_exchange_rate():
+    """שליפת שער חליפין דולר-שקל עדכני"""
     try:
-        # מושך נתונים יומיים ל-5 השנים האחרונות כדי לבנות בסיס נתונים רחב
-        data = yf.download(tickers, period="5y", interval="1d", progress=True)['Close']
-        
-        # אם יש רק מניה אחת, ה-Dataframe ייראה אחרת, נתקן זאת
-        if len(tickers) == 1:
-            data = data.to_frame()
-            data.columns = tickers
+        usd_ils = yf.Ticker("ILS=X").history(period="1d")['Close'].iloc[-1]
+        return round(usd_ils, 4)
+    except:
+        return 3.65  # Fallback
+
+def fetch_stock_data(tickers):
+    """איסוף מחיר, דיבידנד ו-P/E עבור רשימת מניות"""
+    combined_data = []
+    current_time = datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S")
+    usd_ils = get_exchange_rate()
+
+    for ticker in tickers:
+        try:
+            stock = yf.Ticker(ticker)
+            # מחיר אחרון
+            hist = stock.history(period="1d")
+            if hist.empty: continue
             
-        # ניקוי נתונים: הסרת שורות שבהן אין מידע לכל המניות (סופי שבוע/חגים)
-        data = data.dropna(how='all')
-        
-        # עיצוב מחדש: הפיכת התאריך מעמודת אינדקס לעמודה רגילה בשם timestamp
-        data.reset_index(inplace=True)
-        data.rename(columns={'Date': 'timestamp'}, inplace=True)
-        
-        # המרת התאריך לפורמט טקסט נקי
-        data['timestamp'] = data['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-        
-        return data
-    except Exception as e:
-        print(f"Error fetching historical data: {e}")
-        return None
+            price = round(hist['Close'].iloc[-1], 2)
+            
+            # דיבידנדים (מצטבר ליום האחרון אם היה)
+            div = stock.dividends
+            last_div = round(div.iloc[-1], 2) if not div.empty and (datetime.now().date() == div.index[-1].date()) else 0
+            
+            # יחס P/E (נתון נוכחי מה-Info)
+            info = stock.info
+            pe_ratio = info.get('trailingPE', info.get('forwardPE', None))
+            if pe_ratio: pe_ratio = round(pe_ratio, 2)
+
+            combined_data.append({
+                "timestamp": current_time,
+                "ticker": ticker,
+                "price": price,
+                "dividend": last_div,
+                "pe_ratio": pe_ratio,
+                "usd_ils": usd_ils
+            })
+        except Exception as e:
+            print(f"Error fetching data for {ticker}: {e}")
+    
+    return combined_data
 
 def update_csv_history():
-    # 1. טעינת רשימת המניות מהפורטפוליו
     if not os.path.exists(PORTFOLIO_FILE):
         print("Portfolio file not found.")
         return
@@ -52,41 +68,26 @@ def update_csv_history():
         holdings = json.load(f)
     tickers = list(holdings.keys())
 
-    # 2. בדיקה אם קובץ ה-CSV כבר קיים
-    if not os.path.exists(CSV_HISTORY_FILE):
-        # פעם ראשונה: בונים את כל ההיסטוריה
-        df = fetch_full_history(tickers)
-        if df is not None:
-            df.to_csv(CSV_HISTORY_FILE, index=False, encoding='utf-8')
-            print(f"Full history saved to {CSV_HISTORY_FILE}")
+    print(f"Updating extended history for: {tickers}...")
+    new_data = fetch_stock_data(tickers)
+    
+    if not new_data:
+        print("No data collected.")
+        return
+
+    new_df = pd.DataFrame(new_data)
+
+    if os.path.exists(CSV_HISTORY_FILE):
+        old_df = pd.read_csv(CSV_HISTORY_FILE)
+        # חיבור הנתונים החדשים לישנים
+        combined_df = pd.concat([old_df, new_df], ignore_index=True)
+        # מניעת כפילויות (לפי זמן ומניה)
+        combined_df.drop_duplicates(subset=['timestamp', 'ticker'], keep='last', inplace=True)
+        combined_df.to_csv(CSV_HISTORY_FILE, index=False, encoding='utf-8')
     else:
-        # הקובץ קיים: מושכים רק את המחיר של היום ומוסיפים שורה
-        print("CSV exists. Adding latest daily close price...")
-        try:
-            current_data = yf.download(tickers, period="1d", interval="1d", progress=False)['Close']
-            current_time = datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S")
-            
-            # יצירת שורה חדשה
-            new_entry = {"timestamp": current_time}
-            if len(tickers) == 1:
-                new_entry[tickers[0]] = round(float(current_data.iloc[-1]), 2)
-            else:
-                for t in tickers:
-                    new_entry[t] = round(float(current_data[t].iloc[-1]), 2)
-            
-            new_df = pd.DataFrame([new_entry])
-            
-            # טעינת ישן וחיבור
-            old_df = pd.read_csv(CSV_HISTORY_FILE)
-            combined_df = pd.concat([old_df, new_df], ignore_index=True, sort=False)
-            
-            # הסרת כפילויות אם קיימות באותו תאריך
-            combined_df.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
-            
-            combined_df.to_csv(CSV_HISTORY_FILE, index=False, encoding='utf-8')
-            print(f"Added latest data point for {current_time}")
-        except Exception as e:
-            print(f"Error updating CSV: {e}")
+        new_df.to_csv(CSV_HISTORY_FILE, index=False, encoding='utf-8')
+
+    print(f"Extended history updated successfully.")
 
 if __name__ == "__main__":
     update_csv_history()
