@@ -15,72 +15,78 @@ TZ = pytz.timezone('Israel')
 # יצירת תיקייה ייעודית אם לא קיימת
 os.makedirs(HISTORY_DIR, exist_ok=True)
 
-def get_current_prices(tickers):
-    """משיכת מחירים עדכניים עבור כל המניות ברשימה"""
-    prices = {}
-    # משיכת נתונים מרוכזת (יותר מהיר מ-Loop לכל טיקר בנפרד)
+def fetch_full_history(tickers):
+    """מושך את כל היסטוריית המחירים עבור רשימת מניות"""
+    print(f"Fetching full history for: {tickers}...")
     try:
-        data = yf.download(tickers, period="1d", interval="1m", progress=False)['Close']
-        for ticker in tickers:
-            # תמיכה גם אם הורדנו מניה אחת (Series) או כמה (DataFrame)
-            if len(tickers) == 1:
-                price = data.iloc[-1]
-            else:
-                price = data[ticker].iloc[-1]
+        # מושך נתונים יומיים ל-5 השנים האחרונות כדי לבנות בסיס נתונים רחב
+        data = yf.download(tickers, period="5y", interval="1d", progress=True)['Close']
+        
+        # אם יש רק מניה אחת, ה-Dataframe ייראה אחרת, נתקן זאת
+        if len(tickers) == 1:
+            data = data.to_frame()
+            data.columns = tickers
             
-            if pd.notnull(price):
-                prices[ticker] = round(float(price), 2)
+        # ניקוי נתונים: הסרת שורות שבהן אין מידע לכל המניות (סופי שבוע/חגים)
+        data = data.dropna(how='all')
+        
+        # עיצוב מחדש: הפיכת התאריך מעמודת אינדקס לעמודה רגילה בשם timestamp
+        data.reset_index(inplace=True)
+        data.rename(columns={'Date': 'timestamp'}, inplace=True)
+        
+        # המרת התאריך לפורמט טקסט נקי
+        data['timestamp'] = data['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        
+        return data
     except Exception as e:
-        print(f"Error fetching prices: {e}")
-    return prices
+        print(f"Error fetching historical data: {e}")
+        return None
 
 def update_csv_history():
     # 1. טעינת רשימת המניות מהפורטפוליו
     if not os.path.exists(PORTFOLIO_FILE):
-        print(f"Portfolio file not found at {PORTFOLIO_FILE}")
+        print("Portfolio file not found.")
         return
     
-    try:
-        with open(PORTFOLIO_FILE, 'r') as f:
-            holdings = json.load(f)
-        tickers = list(holdings.keys())
-    except Exception as e:
-        print(f"Error reading portfolio.json: {e}")
-        return
-    
-    # 2. קבלת מחירים וזמן נוכחי
-    current_time = datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S")
-    prices = get_current_prices(tickers)
-    
-    if not prices:
-        print("No prices fetched. Skipping update.")
-        return
+    with open(PORTFOLIO_FILE, 'r') as f:
+        holdings = json.load(f)
+    tickers = list(holdings.keys())
 
-    # 3. יצירת השורה החדשה כ-DataFrame
-    new_entry = {"timestamp": current_time}
-    new_entry.update(prices)
-    new_df = pd.DataFrame([new_entry])
-
-    # 4. עדכון קובץ ה-CSV
-    if os.path.exists(CSV_HISTORY_FILE):
+    # 2. בדיקה אם קובץ ה-CSV כבר קיים
+    if not os.path.exists(CSV_HISTORY_FILE):
+        # פעם ראשונה: בונים את כל ההיסטוריה
+        df = fetch_full_history(tickers)
+        if df is not None:
+            df.to_csv(CSV_HISTORY_FILE, index=False, encoding='utf-8')
+            print(f"Full history saved to {CSV_HISTORY_FILE}")
+    else:
+        # הקובץ קיים: מושכים רק את המחיר של היום ומוסיפים שורה
+        print("CSV exists. Adding latest daily close price...")
         try:
-            # קריאת ההיסטוריה הקיימת
-            old_df = pd.read_csv(CSV_HISTORY_FILE)
+            current_data = yf.download(tickers, period="1d", interval="1d", progress=False)['Close']
+            current_time = datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S")
             
-            # חיבור הנתונים - sort=False שומר על סדר העמודות המקורי
-            # אם נוספה מניה חדשה, פנדס יוסיף עמודה וערכי NaN לשורות ישנות
+            # יצירת שורה חדשה
+            new_entry = {"timestamp": current_time}
+            if len(tickers) == 1:
+                new_entry[tickers[0]] = round(float(current_data.iloc[-1]), 2)
+            else:
+                for t in tickers:
+                    new_entry[t] = round(float(current_data[t].iloc[-1]), 2)
+            
+            new_df = pd.DataFrame([new_entry])
+            
+            # טעינת ישן וחיבור
+            old_df = pd.read_csv(CSV_HISTORY_FILE)
             combined_df = pd.concat([old_df, new_df], ignore_index=True, sort=False)
             
+            # הסרת כפילויות אם קיימות באותו תאריך
+            combined_df.drop_duplicates(subset=['timestamp'], keep='last', inplace=True)
+            
             combined_df.to_csv(CSV_HISTORY_FILE, index=False, encoding='utf-8')
-            print(f"Successfully appended to {CSV_HISTORY_FILE}")
+            print(f"Added latest data point for {current_time}")
         except Exception as e:
-            print(f"Error updating existing CSV: {e}")
-    else:
-        # יצירת קובץ חדש לחלוטין
-        new_df.to_csv(CSV_HISTORY_FILE, index=False, encoding='utf-8')
-        print(f"Created new history file at {CSV_HISTORY_FILE}")
-    
-    print(f"Update complete: {current_time}")
+            print(f"Error updating CSV: {e}")
 
 if __name__ == "__main__":
     update_csv_history()
