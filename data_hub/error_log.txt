@@ -10,3 +10,6 @@
 2026-02-24 16:06:40,431: 
 1 Failed download:
 2026-02-24 16:06:40,431: ['ASML']: OperationalError('database is locked')
+2026-02-25 18:03:41,302: 
+1 Failed download:
+2026-02-25 18:03:41,302: ['SPY']: OperationalError('database is locked')
