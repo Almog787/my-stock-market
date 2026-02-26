@@ -13,3 +13,6 @@
 2026-02-25 18:03:41,302: 
 1 Failed download:
 2026-02-25 18:03:41,302: ['SPY']: OperationalError('database is locked')
+2026-02-26 19:00:36,097: 
+1 Failed download:
+2026-02-26 19:00:36,097: ['XOM']: OperationalError('database is locked')
