@@ -1,33 +1,27 @@
-![Python](https://img.shields.io/badge/python-3.8%2B-blue?logo=python)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-orange)
-
 # 📊 Portfolio Dashboard | מעקב תיק השקעות
-**Last Update / עדכון אחרון:** 26/02/2026 00:40 | **USD/ILS:** ₪3.087
+**Last Update:** 26/02/2026 11:55 | **USD/ILS:** ₪3.103
 
-## 💰 Performance Summary | סיכום ביצועים
+## 💰 Portfolio Summary | סיכום התיק
 | Metric | Value | נתון |
 | :--- | :--- | :--- |
-| **Portfolio Value** | `₪182,169` | **שווי תיק** |
-| **Daily Change** | `+1.16%` (₪2,085) | **שינוי יומי** |
-| **Total Return** | `+40.17%` (₪52,202) | **תשואה מצטברת** |
-| **Max Drawdown** | `-24.97%` | **ירידה מקסימלית** |
-| **Best Stock 🚀** | ASML | **המניה המנצחת** |
+| **Current Value** | `₪171,581` | **שווי נוכחי** |
+| **Total Invested** | `₪130,307` | **סך השקעה** |
+| **Total Profit/Loss** | `+31.67%` (₪41,274) | **רווח/הפסד כולל** |
+| **Daily Change** | `+1.20%` | **שינוי יומי** |
+
+## 📜 Holdings | פירוט החזקות
+| Ticker | Shares | Avg. Cost | Current Price | P&L % | P&L ILS |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| GOOGL | 45 | $181.15 | $313.00 | 🟢 +72.78% | ₪18,409 |
+| ASML | 4 | $934.51 | $1,526.62 | 🟢 +63.36% | ₪7,348 |
+| XOM | 2 | $126.08 | $149.06 | 🟢 +18.23% | ₪143 |
+| NVDA | 57 | $148.62 | $195.88 | 🟢 +31.80% | ₪8,358 |
+| TSLA | 20 | $436.45 | $417.39 | 🔴 -4.37% | ₪-1,183 |
+| VOO | 24 | $527.38 | $637.49 | 🟢 +20.88% | ₪8,199 |
 
 ## 📈 Charts | גרפים
 ![Performance](./data_hub/portfolio_performance.png)
 ![Allocation](./data_hub/asset_allocation.png)
 
-## ⚙️ How to Update? | הוראות עדכון
-### 🇺🇸 English
-1. Open `data_hub/portfolio.json`.
-2. Click the **Edit** icon.
-3. Modify symbols/amounts and **Commit changes**.
-
-### 🇮🇱 עברית
-1. פתחו את הקובץ `data_hub/portfolio.json`.
-2. לחצו על אייקון ה**עריכה**.
-3. עדכנו מניות/כמויות ולחצו על **Commit changes**.
-
 ---
-📂 *Created by [Almog787](https://github.com/Almog787)* | [Live Site](https://almog787.github.io/Sapa/)
+📂 *Created by Almog787*
