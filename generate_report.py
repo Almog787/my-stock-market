@@ -86,20 +86,20 @@ def main():
     
     current_val_usd = df['total_usd'].iloc[-1]
     total_invested_usd = sum(h['amount'] * h['avg_price'] for h in holdings.values())
-    total_pnl_pct = ((current_val_usd / total_invested_usd) - 1) * 100
+    total_pnl_pct = (((current_val_usd / total_invested_usd) - 1) * 100) if total_invested_usd > 0 else 0
     
     portfolio_norm = (df['total_usd'] / df['total_usd'].iloc[0]) * 100
     max_drawdown = (((portfolio_norm - portfolio_norm.cummax()) / portfolio_norm.cummax()) * 100).min()
 
     generate_visuals(df, holdings)
 
-    # --- בניית טבלת מניות עם הסברים ---
     stock_rows = []
     for t in tickers:
-        curr_p = df[t].iloc[-1]
-        avg_p = holdings[t]['avg_price']
-        gain_pct = ((curr_p / avg_p) - 1) * 100
-        stock_rows.append(f"| **{t}** | {get_performance_bar(gain_pct)} | {holdings[t]['amount']} | ${curr_p:,.2f} | **{gain_pct:+.2f}%** |")
+        if t in df.columns:
+            curr_p = df[t].iloc[-1]
+            avg_p = holdings[t]['avg_price']
+            gain_pct = ((curr_p / avg_p) - 1) * 100 if avg_p > 0 else 0
+            stock_rows.append(f"| **{t}** | {get_performance_bar(gain_pct)} | {holdings[t]['amount']} | ${curr_p:,.2f} | **{gain_pct:+.2f}%** |")
 
     update_time = datetime.now(TZ).strftime('%d/%m/%Y %H:%M')
     
@@ -112,7 +112,7 @@ def main():
         f"| :--- | :--- | :--- |",
         f"| **שווי נוכחי (ILS)** | `₪{current_val_usd * usd_to_ils:,.0f}` | השווי הכולל של התיק שלך בשקלים נכון לרגע זה. |",
         f"| **רווח/הפסד כולל** | `{total_pnl_pct:+.2f}%` | אחוז השינוי מההשקעה המקורית (Cost Basis). |",
-        f"| **Max Drawdown** | `{max_drawdown:.2f}%` | **מדד סיכון:** הירידה החדה ביותר שחווה התיק מהשיא שלו. עוזר להבין תנודתיות. |",
+        f"| **Max Drawdown** | `{max_drawdown:.2f}%` | **מדד סיכון:** הירידה החדה ביותר שחווה התיק מהשיא שלו. |",
         
         f"\n## 📜 Holdings | פירוט החזקות",
         f"| Ticker | Momentum | Shares | Price | P&L % |",
@@ -126,11 +126,12 @@ def main():
         f"### 📔 מילון מונחים מקוצר:",
         f"- **Momentum (הבר הוויזואלי):** ייצוג גרפי של ביצועי המניה. כל בלוק מייצג 10% רווח/הפסד.",
         f"- **Normalized Performance:** השוואה של התיק ל-S&P 500 כאילו שניהם התחילו ב-100 נקודות.",
-        f"- **Drawdown (הגרף האדום):** מציג כמה התיק "דימם" מהשיא שלו בכל נקודת זמן.",
+        f"- **Drawdown (הגרף האדום):** מציג כמה התיק 'דימם' מהשיא שלו בכל נקודת זמן.",
         f"\n*Created by Almog787*"
     ]
 
     with open(README_FILE, 'w', encoding='utf-8') as f:
         f.write("\n".join(output))
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()
