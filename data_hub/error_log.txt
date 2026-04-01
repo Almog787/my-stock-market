@@ -35,3 +35,6 @@
 1 Failed download:
 2026-03-13 16:50:01,048: ['GOOGL']: OperationalError('database is locked')
 2026-03-16 15:07:09,321: Failed to get ticker 'NVDA' reason: Failed to perform, curl: (28) Connection timed out after 10002 milliseconds. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.
+2026-04-01 19:12:00,367: 
+1 Failed download:
+2026-04-01 19:12:00,367: ['VOO']: OperationalError('database is locked')
