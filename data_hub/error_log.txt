@@ -44,3 +44,6 @@
 2026-04-03 18:55:53,978: 
 1 Failed download:
 2026-04-03 18:55:53,978: ['NVDA']: OperationalError('database is locked')
+2026-04-03 22:39:49,663: 
+1 Failed download:
+2026-04-03 22:39:49,663: ['TSLA']: OperationalError('database is locked')
