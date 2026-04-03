@@ -41,3 +41,6 @@
 2026-04-01 22:45:46,824: 
 1 Failed download:
 2026-04-01 22:45:46,825: ['XOM']: OperationalError('database is locked')
+2026-04-03 18:55:53,978: 
+1 Failed download:
+2026-04-03 18:55:53,978: ['NVDA']: OperationalError('database is locked')
