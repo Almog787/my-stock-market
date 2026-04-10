@@ -50,3 +50,6 @@
 2026-04-07 17:08:30,741: 
 1 Failed download:
 2026-04-07 17:08:30,741: ['ASML']: OperationalError('database is locked')
+2026-04-10 19:02:37,130: 
+1 Failed download:
+2026-04-10 19:02:37,130: ['VOO']: OperationalError('database is locked')
