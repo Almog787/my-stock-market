@@ -62,3 +62,6 @@
 2026-04-20 21:53:46,919: 
 1 Failed download:
 2026-04-20 21:53:46,919: ['VOO']: OperationalError('database is locked')
+2026-04-20 22:52:09,126: 
+1 Failed download:
+2026-04-20 22:52:09,126: ['VOO']: OperationalError('database is locked')
