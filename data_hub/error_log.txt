@@ -59,3 +59,6 @@
 2026-04-17 21:51:26,145: 
 1 Failed download:
 2026-04-17 21:51:26,145: ['XOM']: OperationalError('database is locked')
+2026-04-20 21:53:46,919: 
+1 Failed download:
+2026-04-20 21:53:46,919: ['VOO']: OperationalError('database is locked')
