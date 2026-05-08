@@ -71,3 +71,6 @@
 2026-04-29 19:44:24,445: 
 1 Failed download:
 2026-04-29 19:44:24,445: ['XOM']: OperationalError('database is locked')
+2026-05-08 19:26:33,752: 
+1 Failed download:
+2026-05-08 19:26:33,752: ['TSLA']: OperationalError('database is locked')
