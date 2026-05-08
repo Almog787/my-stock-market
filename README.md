@@ -1,5 +1,5 @@
 # 📊 Portfolio Dashboard | מעקב תיק השקעות
-**Last Update:** 09/05/2026 00:08 | **USD/ILS:** ₪2.900
+**Last Update:** 09/05/2026 02:00 | **USD/ILS:** ₪2.900
 
 ## 💰 Portfolio Summary | סיכום התיק
 | Metric | Value | נתון |
