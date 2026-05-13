@@ -77,3 +77,6 @@
 2026-05-12 23:06:49,662: 
 1 Failed download:
 2026-05-12 23:06:49,662: ['VOO']: OperationalError('database is locked')
+2026-05-13 18:59:45,084: 
+1 Failed download:
+2026-05-13 18:59:45,084: ['NVDA']: OperationalError('database is locked')
