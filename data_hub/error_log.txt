@@ -87,3 +87,6 @@
 1 Failed download:
 2026-06-01 19:22:02,117: ['XOM']: YFRateLimitError('Too Many Requests. Rate limited. Try after a while.')
 2026-06-01 19:22:04,204 - ERROR - Exchange rate error: Too Many Requests. Rate limited. Try after a while.
+2026-06-05 16:32:06,286: 
+1 Failed download:
+2026-06-05 16:32:06,286: ['GOOGL']: OperationalError('database is locked')
