@@ -90,3 +90,6 @@
 2026-06-05 16:32:06,286: 
 1 Failed download:
 2026-06-05 16:32:06,286: ['GOOGL']: OperationalError('database is locked')
+2026-07-06 16:53:49,883: 
+1 Failed download:
+2026-07-06 16:53:49,883: ['TSLA']: OperationalError('database is locked')
