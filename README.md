@@ -1,5 +1,5 @@
 # 📊 Portfolio Dashboard | מעקב תיק השקעות
-**Last Update:** 25/07/2026 00:09 | **USD/ILS:** ₪3.049
+**Last Update:** 25/07/2026 02:05 | **USD/ILS:** ₪3.049
 
 ## 💰 Portfolio Summary | סיכום התיק
 | Metric | Value | נתון |
@@ -7,7 +7,7 @@
 | **Current Value** | `₪173,957` | **שווי נוכחי** |
 | **Total Invested** | `₪130,727` | **סך השקעה** |
 | **Total Profit/Loss** | `+33.07%` (₪43,230) | **רווח/הפסד כולל** |
-| **Daily Change** | `-0.50%` | **שינוי יומי** |
+| **Daily Change** | `-0.51%` | **שינוי יומי** |
 
 ## 📜 Holdings | פירוט החזקות
 | Ticker | Shares | Avg. Cost | Current Price | P&L % | P&L ILS |
